@@ -20,17 +20,7 @@ import { JwtStrategy } from './auth/strategy/jwt.strategy';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/auth.guard';
 import { ConfigModule } from '@nestjs/config';
-import { PlacesModule } from './places/places.module';
-import { OptionsModule } from './options/options.module';
-import { SubmitsModule } from './submits/submits.module';
 import { UploadModule } from './upload/upload.module';
-import { CheckinModule } from './checkin/checkin.module';
-import { GroupQuestionModule } from './group-question/group-question.module';
-import { GroupUsersModule } from './group-users/group-users.module';
-import { DashboardModule } from './dashboard/dashboard.module';
-import { LogsubmitsModule } from './logsubmits/logsubmits.module';
-import { TicketsModule } from './tickets/tickets.module';
-import { DepartmentsModule } from './departments/departments.module';
 
 @Module({
   imports: [
@@ -47,23 +37,9 @@ import { DepartmentsModule } from './departments/departments.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    CheckinModule,
-    OptionsModule,
-    SubmitsModule,
+    // CheckinModule,
+
     UploadModule,
-
-    PlacesModule,
-
-    GroupQuestionModule,
-
-    GroupUsersModule,
-
-    DashboardModule,
-
-    LogsubmitsModule,
-
-    TicketsModule,
-    DepartmentsModule,
   ],
   controllers: [AppController],
   providers: [

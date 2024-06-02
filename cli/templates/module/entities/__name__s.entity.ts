@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { IsOptional, IsString } from 'class-validator';
 import { Document } from 'mongoose';
 
-export type __name__(sentenceCase)Document = __name__(sentenceCase) & Document;
+export type __name__(pascalCase)Document = __name__(pascalCase) & Document;
 
 @Schema({
   collection: '__name__s',
@@ -10,7 +10,7 @@ export type __name__(sentenceCase)Document = __name__(sentenceCase) & Document;
   toJSON: { virtuals: true },
   toObject: { virtuals: true },
 })
-export class __name__(sentenceCase) {
+export class __name__(pascalCase) {
   @IsString()
   @IsOptional()
   @Prop()
@@ -23,4 +23,4 @@ export class __name__(sentenceCase) {
   __column-table-be__
 }
 
-export const __name__(sentenceCase)Schema = SchemaFactory.createForClass(__name__(sentenceCase));
+export const __name__(pascalCase)Schema = SchemaFactory.createForClass(__name__(pascalCase));

@@ -23,17 +23,12 @@ import { Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 // import * as AWS from 'aws-sdk';
 import { ConfigService } from '@nestjs/config';
-import { PlacesService } from 'src/places/places.service';
-import { OptionsService } from 'src/options/options.service';
-import { SubmitsService } from 'src/submits/submits.service';
 
 @Controller('projects')
 export class ProjectsController extends BaseController<Project> {
   constructor(
     readonly service: ProjectsService,
-    readonly placeService: PlacesService,
-    readonly optionService: OptionsService,
-    readonly submitService: SubmitsService,
+
     private readonly userService: UsersService,
     private readonly configService: ConfigService,
   ) {
@@ -240,9 +235,9 @@ export class ProjectsController extends BaseController<Project> {
     //   Key: id?.toString(),
     // });
     await this.service.deleteOne(id);
-    await this.optionService.baseDeleteMany({ projectId: id });
-    await this.submitService.baseDeleteMany({ projectId: id });
-    await this.placeService.baseDeleteMany({ projectId: id });
+    // await this.optionService.baseDeleteMany({ projectId: id });
+    // await this.submitService.baseDeleteMany({ projectId: id });
+    // await this.placeService.baseDeleteMany({ projectId: id });
   }
 
   @Post('/import')
