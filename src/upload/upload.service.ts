@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import * as AWS from 'aws-sdk';
 
+import { S3Client } from '@aws-sdk/client-s3';
 import { Model } from 'mongoose';
 import { nanoid } from 'nanoid';
 import { ID } from 'src/app/controllers/services/base.service';
@@ -10,6 +11,7 @@ import { CreateUploadDto } from './dto/create-upload.dto';
 import { UpdateUploadDto } from './dto/update-upload.dto';
 import { Upload, UploadDocument } from './entities/upload.entity';
 import videoOrImage from 'src/helper/videoOrImage';
+import { Upload as UploadS3 } from '@aws-sdk/lib-storage';
 
 @Injectable()
 export class UploadService {
@@ -28,9 +30,8 @@ export class UploadService {
       oldUrl: string;
     },
   ) {
-    const s3 = new AWS.S3({
-      s3BucketEndpoint: true,
-      endpoint: 'https://sin1.contabostorage.com/survey-qc-clone',
+    const s3 = new S3Client({
+      endpoint: this.configService.get('ENDPOINT_R2')?.trim(),
     });
 
     const extArray = mimetype.split('/');
@@ -43,17 +44,19 @@ export class UploadService {
       `${data?.rawProjectId?.toString() || 'unknown'}/${typeFile}/${nanoid(
         10,
       )}-${filename}`;
-    const uploadResult = await s3
-      .upload({
-        Bucket: this.configService.get('AWS_PUBLIC_BUCKET_NAME'),
+    const uploadResult = await new UploadS3({
+      client: s3,
+
+      params: {
+        Bucket: this.configService.get('AWS_PUBLIC_BUCKET_NAME')?.trim(),
         Body: dataBuffer,
         Key: key,
         Metadata: {
           'Content-Type': ContentType,
         },
         ContentType: ContentType,
-      })
-      .promise();
+      },
+    }).done();
     // const up2 = await s3.putObject({
     //   Bucket: this.configService.get('AWS_PUBLIC_BUCKET_NAME'),
     //   Body: dataBuffer,
@@ -67,14 +70,16 @@ export class UploadService {
     const refreshURL = data?.oldUrl
       ? '?v=' + Math.floor(Math.random() * 9999) + 1
       : '';
-    const urlPublic = `https://sin1.contabostorage.com/65edcc7acb8d42228fd4549693592d9f:survey-qc-clone/${uploadResult.Key}${refreshURL}`;
-    const newFile = await this.uploadModel.create({
-      key: uploadResult.Key,
-      name: uploadResult.Key,
-      url: uploadResult.Location,
+    const urlPublic = `${this.configService.get('R2_PUBLIC')}/${
+      uploadResult?.Key
+    }${refreshURL}`;
+    const newFile = {
+      key: key,
+      name: key,
+      url: urlPublic,
       urlPublic,
       ...data,
-    });
+    };
     return { newFile, uploadResult: { ...uploadResult, urlPublic } };
   }
   create(createUploadDto: CreateUploadDto) {
