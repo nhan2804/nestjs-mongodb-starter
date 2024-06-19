@@ -19,17 +19,24 @@ import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './auth/strategy/jwt.strategy';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/auth.guard';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
     ProjectsModule,
-    MongooseModule.forRoot(
-      process.env?.mode == 'PRODUCTION'
-        ? 'mongodb+srv://nhan2804:eUpyLWXZIqlYsrTF@cluster0.gnakj.mongodb.net/scaffold-project?retryWrites=true&w=majority'
-        : 'mongodb+srv://nhan2804:eUpyLWXZIqlYsrTF@cluster0.gnakj.mongodb.net/scaffold-project?retryWrites=true&w=majority',
-    ),
+    //s
+
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get('MONGODB'),
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      }),
+      inject: [ConfigService],
+    }),
+
     AuthModule,
     UsersModule,
     PassportModule,

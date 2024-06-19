@@ -20,22 +20,12 @@ export class Department {
   @IsString()
   @Prop()
   avatar?: string;
-  
-                  
 
-                  @Prop()
-                  note: string;
-                  
+  @Prop()
+  note: string;
 
-              
-
-                  
-
-                  @Prop()
-                  status: string;
-                  
-
-              
+  @Prop()
+  status: string;
 }
 
 export const DepartmentSchema = SchemaFactory.createForClass(Department);

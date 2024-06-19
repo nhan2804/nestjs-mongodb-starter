@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { IsOptional, IsString } from 'class-validator';
-import { Document } from 'mongoose';
+import { Document,Types ,SchemaTypes} from 'mongoose';
 
 export type __name__(pascalCase)Document = __name__(pascalCase) & Document;
 
@@ -16,6 +16,8 @@ export class __name__(pascalCase) {
   @Prop()
   name: string;
 
+  // @Prop({ type: SchemaTypes.ObjectId, ref: User.name })
+  // owner: Types.ObjectId;
   @IsOptional()
   @IsString()
   @Prop()
