@@ -21,6 +21,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/auth.guard';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UploadModule } from './upload/upload.module';
+import { ShortensModule } from './shortens/shortens.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { UploadModule } from './upload/upload.module';
     // CheckinModule,
 
     UploadModule,
+    ShortensModule,
   ],
   controllers: [AppController],
   providers: [

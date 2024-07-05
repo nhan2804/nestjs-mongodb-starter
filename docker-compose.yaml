@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  app:
+    container_name: app-core-shorten
+    image: nhan2804/app-core:shorten-v1.0.0
+    pull_policy: if_not_present
+    build:
+      context: .
+      target: production
+      dockerfile: ./Dockerfile
+    command: 'node dist/main.js'
+    ports:
+      - 5000:5001
