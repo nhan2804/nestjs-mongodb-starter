@@ -32,19 +32,14 @@ export class UsersService extends BaseService<User> {
   async findOneV2(ID: string): Promise<User> {
     const cacheKey = `user_jwt_${ID}`;
     const cachedValue = await this.cacheManager.get<string>(cacheKey);
-
     if (cachedValue) {
       return JSON.parse(cachedValue);
     }
-
     const user = await this.userModel.findOne({ _id: ID }, { _id: 1, otp: 1 });
-
     if (!user) {
       throw new NotFoundException(`User with ID ${ID} not found`);
     }
-
     await this.cacheManager.set(cacheKey, JSON.stringify(user), 1000 * 60 * 5);
-
     return user;
   }
 

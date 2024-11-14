@@ -34,7 +34,7 @@ export class UploadController {
       {
         rawProjectId: createUploadDto?.projectId,
         oldUrl: createUploadDto?.oldUrl,
-        projectId: new Types.ObjectId(createUploadDto?.projectId),
+        projectId: new Types.ObjectId(),
         ownerId: u?._id,
       },
     );

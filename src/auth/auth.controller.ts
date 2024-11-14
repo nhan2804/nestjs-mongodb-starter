@@ -6,6 +6,11 @@ import {
   UseGuards,
   Request,
   Inject,
+  NotFoundException,
+  BadRequestException,
+  UsePipes,
+  ValidationPipe,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { User, UserDocument } from 'src/users/entities/user.entity';
 import { AuthService } from './auth.service';
@@ -23,6 +28,8 @@ import { Types } from 'mongoose';
 import { nanoid } from 'nanoid';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
+import { ChangePasswordDto } from './dto/change-password';
+import { UpdateAuthDto } from './dto/update-auth.dto';
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -33,18 +40,30 @@ export class AuthController {
     private authSessionService: AuthSessionsService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
-
   @Public()
-  @Post('/register')
-  async createUser(
-    @Body('password') password: string,
-    @Body('username') username: string,
-  ): Promise<User> {
-    const saltOrRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltOrRounds);
-    const result = await this.usersService.createUser(username, hashedPassword);
-    return result;
+  @Get('get-all-data')
+  async getData() {
+    //Get all keys
+    const keys = await this.cacheManager.store.keys();
+
+    //Loop through keys and get data
+    const allData: { [key: string]: any } = {};
+    for (const key of keys) {
+      allData[key] = await this.cacheManager.get(key);
+    }
+    return allData;
   }
+  // @Public()
+  // @Post('/register')
+  // async createUser(
+  //   @Body('password') password: string,
+  //   @Body('username') username: string,
+  // ): Promise<User> {
+  //   const saltOrRounds = 10;
+  //   const hashedPassword = await bcrypt.hash(password, saltOrRounds);
+  //   const result = await this.usersService.createUser(username, hashedPassword);
+  //   return result;
+  // }
   @Get('/profile')
   async profile(@UserLoggin() user: any): Promise<any> {
     const u = await this.usersService.findOnePublic(user?._id);
@@ -52,17 +71,24 @@ export class AuthController {
       ...u?.toObject(),
       authSessionKey: user?.authSessionKey,
     };
-    return u;
+  }
+  @Post('/logout-session')
+  async logoutSession(
+    @UserLoggin() user: any,
+    @Body('authSessionKey') authSessionKey: string | string[],
+  ): Promise<any> {
+    const rs = await this.authSessionService.deleteAuthSessions({
+      sessions: authSessionKey,
+      ownerId: user?._id,
+    });
+    return rs;
   }
   @Post('/logout')
   async logout(@UserLoggin() user: any): Promise<any> {
-    await this.usersService.updateOne(new Types.ObjectId(user?._id), {
-      otp: nanoid(10),
-    } as any);
-    const rs = await this.authSessionService.deleteMany({
-      ownerId: new Types.ObjectId(user?._id),
+    const rs = await this.authSessionService.deleteAuthSessions({
+      sessions: user?.authSessionKey,
+      ownerId: user?._id,
     });
-    await this.cacheManager.del(`user_jwt_${user?._id?.toString()}`);
     return rs;
   }
   @Public()
@@ -111,6 +137,68 @@ export class AuthController {
       accessToken: user?.access_token,
       geoInfo,
     });
+    return user;
+  }
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  )
+  @Post('change-password')
+  async changePassword(
+    @Body() body: ChangePasswordDto,
+    @UserLoggin() u: UserDocument,
+  ) {
+    const user = await this.usersService.findOne({ _id: u?._id });
+
+    if (!user) throw new NotFoundException();
+    const saltOrRounds = 10;
+    const isMatch = await bcrypt.compare(body.oldPassword, user.password);
+    if (!isMatch) throw new BadRequestException('Password cũ không chính xác!');
+    const isSamePassword = await bcrypt.compare(
+      body.newPassword,
+      user.password,
+    );
+    if (isSamePassword)
+      throw new BadRequestException('Password mới phải khác password cũ!');
+    user.password = await bcrypt.hash(body.newPassword, saltOrRounds);
+    user.otp = nanoid(10);
+
+    await user.save();
+    //NNN thay vì xử lý nữa, tôi quyết định hacking
+    throw new UnauthorizedException({
+      skipAlert: true,
+    });
+    return user;
+  }
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  )
+  @Post('update')
+  async updateProfile(
+    @Body() body: UpdateAuthDto,
+    @UserLoggin() u: UserDocument,
+  ) {
+    const user = await this.usersService.findOne({ _id: u?._id });
+
+    if (!user) throw new NotFoundException();
+    if (body.fullName) {
+      user.fullName = body.fullName;
+    }
+
+    if (body.avatar) {
+      user.avatar = body.avatar;
+    }
+
+    // Save the updated user document to the database
+    await user.save();
+    // ...rest logic
     return user;
   }
 }

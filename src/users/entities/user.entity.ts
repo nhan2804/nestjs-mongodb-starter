@@ -16,7 +16,7 @@ export class User {
   ssoEmail?: string;
   @Prop()
   password: string;
-  @Prop()
+  @Prop({ default: 'USER' })
   type: string;
   @Prop()
   mode?: string;

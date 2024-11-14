@@ -7,6 +7,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { IS_PUBLIC_KEY } from './public';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
+import { Types } from 'mongoose';
 import { AuthSessionsService } from 'src/auth-sessions/auth-sessions.service';
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -40,9 +41,10 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       if (token) {
         const decoded = this.jwtService.decode(token) as any; // Decode without verifying
         if (decoded?.authSessionKey) {
-          //kiểu này không ổn
-          this.authSessionService.deleteOne({
-            authSessionKey: decoded?.authSessionKey,
+          //NNN kiểu này không ổn
+          this.authSessionService.deleteAuthSessions({
+            sessions: decoded?.authSessionKey,
+            ownerId: decoded?.sub || decoded?._id,
           });
         }
       }

@@ -41,9 +41,11 @@ export class UploadService {
     const ContentType = typeFile === 'images' ? 'image/jpeg' : 'video/mp4';
     const key =
       data?.oldUrl ||
-      `${data?.rawProjectId?.toString() || 'unknown'}/${typeFile}/${nanoid(
-        10,
-      )}-${filename}`;
+      `${
+        data?.rawProjectId?.toString() ||
+        this.configService.get('FOLDER')?.trim() ||
+        'unknown'
+      }/${typeFile}/${nanoid(10)}-${filename}`;
     const uploadResult = await new UploadS3({
       client: s3,
 
@@ -70,7 +72,7 @@ export class UploadService {
     const refreshURL = data?.oldUrl
       ? '?v=' + Math.floor(Math.random() * 9999) + 1
       : '';
-    const urlPublic = `${this.configService.get('R2_PUBLIC')}/${
+    const urlPublic = `${this.configService.get('DOMAIN_PUBLIC_R2')}/${
       uploadResult?.Key
     }${refreshURL}`;
     const newFile = {
