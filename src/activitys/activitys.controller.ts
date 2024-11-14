@@ -20,14 +20,21 @@ import {
 import { Types } from 'mongoose';
 import SortPaginate from 'src/app/types/sort-paginate';
 import { Public } from 'src/auth/guards/public';
+import { EventPattern, Payload } from '@nestjs/microservices';
 @Controller('activities')
 export class ActivitysController {
   constructor(private readonly activitysService: ActivitysService) {}
   @Public()
   @Post()
   create(@Body() createActivityDto: CreateActivityDto) {
-    return this.activitysService.sendActivities(createActivityDto);
-    // return this.activitysService.create(createActivityDto);
+    return this.activitysService.create(createActivityDto);
+  }
+  @EventPattern('activities.created')
+  hello(createActivityDto: CreateActivityDto) {
+    console.log('recive message', createActivityDto);
+
+    this.activitysService.create(createActivityDto);
+    return { message: 'Ok' };
   }
   @Post('bulk/create')
   createBulk(@Body() createActivityDto: CreateActivityDto[]) {
@@ -46,9 +53,9 @@ export class ActivitysController {
         name: { $regex: query?.name?.normalize(), $options: 'i' },
       }),
 
-      // ...(query?.ownerId && {
-      //   ownerId: new Types.ObjectId(query?.ownerId),
-      // }),
+      ...(query?.ownerId && {
+        ownerId: new Types.ObjectId(query?.ownerId),
+      }),
       ...(Number(query?.startTime) &&
         Number(query?.endTime) && {
           createdAt: {
