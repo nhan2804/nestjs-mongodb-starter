@@ -23,10 +23,14 @@ export class AuthService {
     return null;
   }
   async login(user: any) {
-    const payload = { username: user.username, sub: user._id };
+    const payload = {
+      username: user.username,
+      sub: user._id,
+      fullName: user?.fullName,
+    };
     return {
       access_token: this.jwtService.sign(payload, {
-        expiresIn: '30 days',
+        expiresIn: '1m',
       }),
       user,
     };

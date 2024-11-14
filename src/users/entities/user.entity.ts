@@ -8,7 +8,7 @@ export type UserDocument = User & Document;
 export class User {
   @Prop({ trim: true, index: true })
   username: string;
-  @Prop({ default: '' + Math.random() })
+  @Prop({})
   fullName: string;
   @Prop()
   ssoId?: string;
@@ -27,7 +27,7 @@ export class User {
 
   @Prop({ type: SchemaTypes.ObjectId, ref: 'projects' })
   projectId: Types.ObjectId;
-  @Prop({ default: Math.floor(Math.random() * 1000) })
+  @Prop({})
   otp?: string;
 }
 
