@@ -27,7 +27,7 @@ export class User {
 
   @Prop({ type: SchemaTypes.ObjectId, ref: 'projects' })
   projectId: Types.ObjectId;
-  @Prop({})
+  @Prop({ default: () => Math.random() })
   otp?: string;
 }
 

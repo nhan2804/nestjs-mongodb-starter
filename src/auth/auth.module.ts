@@ -8,10 +8,12 @@ import { LocalStrategy } from './strategy/auth.local';
 import { JwtStrategy } from './strategy/jwt.strategy';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { AuthSessionsModule } from 'src/auth-sessions/auth-sessions.module';
 @Module({
   controllers: [AuthController],
   providers: [AuthService, LocalStrategy, JwtStrategy],
   imports: [
+    AuthSessionsModule,
     UsersModule,
     PassportModule,
     JwtModule.registerAsync({

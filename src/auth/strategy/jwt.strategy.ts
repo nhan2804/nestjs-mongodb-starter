@@ -12,14 +12,22 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: false,
+      // ignoreExpiration: false,
       secretOrKey:
         configService.get<string>('JWT_SECRET') || 'GOOD_LUCK_TO_YOU_1080',
     });
   }
 
   async validate(payload: any) {
+    const _id = payload?.sub;
+    const user = await this.userService.findOneV2(_id);
+
+    // for function force logout all device
+    if (user?.otp?.toString() !== payload?.otp?.toString()) {
+      return false;
+    }
     return {
+      ...payload,
       _id: payload.sub,
       username: payload.username,
       fullName: payload.fullName ?? undefined,

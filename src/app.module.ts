@@ -21,9 +21,23 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/auth.guard';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UploadModule } from './upload/upload.module';
+import { CacheModule } from '@nestjs/cache-manager';
+import { AuthSessionsModule } from './auth-sessions/auth-sessions.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
+    CacheModule.register({
+      isGlobal: true,
+    }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 60,
+      },
+    ]),
     ProjectsModule,
     //s
 
@@ -47,6 +61,7 @@ import { UploadModule } from './upload/upload.module';
     // CheckinModule,
 
     UploadModule,
+    AuthSessionsModule,
   ],
   controllers: [AppController],
   providers: [
@@ -57,6 +72,10 @@ import { UploadModule } from './upload/upload.module';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
 })

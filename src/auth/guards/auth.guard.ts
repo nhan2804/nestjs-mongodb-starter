@@ -6,9 +6,15 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { IS_PUBLIC_KEY } from './public';
 import { Reflector } from '@nestjs/core';
+import { JwtService } from '@nestjs/jwt';
+import { AuthSessionsService } from 'src/auth-sessions/auth-sessions.service';
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
-  constructor(private reflector: Reflector) {
+  constructor(
+    private reflector: Reflector,
+    private jwtService: JwtService,
+    private authSessionService: AuthSessionsService,
+  ) {
     super();
   }
 
@@ -24,7 +30,22 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   handleRequest(err, user, info, excutionContext: ExecutionContext) {
-    if (err || !user) {
+    if (err || !user?._id) {
+      // NNN comment vì đã có crontask cover
+      const token = excutionContext
+        .switchToHttp()
+        .getRequest()
+        .headers.authorization?.split(' ')[1];
+
+      if (token) {
+        const decoded = this.jwtService.decode(token) as any; // Decode without verifying
+        if (decoded?.authSessionKey) {
+          //kiểu này không ổn
+          this.authSessionService.deleteOne({
+            authSessionKey: decoded?.authSessionKey,
+          });
+        }
+      }
       throw err || new UnauthorizedException();
     }
     return user;

@@ -4,6 +4,7 @@ import { UsersService } from 'src/users/users.service';
 import * as bcrypt from 'bcrypt';
 import { BadRequestException } from '@nestjs/common/exceptions';
 import { User, UserDocument } from 'src/users/entities/user.entity';
+import { nanoid } from 'nanoid';
 @Injectable()
 export class AuthService {
   constructor(
@@ -23,16 +24,20 @@ export class AuthService {
     return null;
   }
   async login(user: any) {
+    const authSessionKey = nanoid(10);
     const payload = {
       username: user.username,
       sub: user._id,
       fullName: user?.fullName,
+      otp: user?.otp,
+      authSessionKey,
     };
     return {
       access_token: this.jwtService.sign(payload, {
-        expiresIn: '1m',
+        expiresIn: '60m',
       }),
       user,
+      authSessionKey,
     };
   }
   async loginSSO(data: {
@@ -47,7 +52,10 @@ export class AuthService {
     console.log({ ssoId });
 
     if (user) {
-      const payload = { username: user.username, sub: user._id };
+      const payload = {
+        username: user.username,
+        sub: user._id,
+      };
       return {
         access_token: this.jwtService.sign(payload, { expiresIn: '2 days' }),
         user,

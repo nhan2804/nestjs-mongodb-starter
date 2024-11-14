@@ -5,6 +5,7 @@ import {
   Body,
   UseGuards,
   Request,
+  Inject,
 } from '@nestjs/common';
 import { User, UserDocument } from 'src/users/entities/user.entity';
 import { AuthService } from './auth.service';
@@ -17,6 +18,11 @@ import { HttpService } from '@nestjs/axios/dist';
 import { catchError, firstValueFrom, Observable } from 'rxjs';
 import { AxiosError, AxiosResponse } from 'axios';
 import { ConfigService } from '@nestjs/config';
+import { AuthSessionsService } from 'src/auth-sessions/auth-sessions.service';
+import { Types } from 'mongoose';
+import { nanoid } from 'nanoid';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -24,6 +30,8 @@ export class AuthController {
     private usersService: UsersService,
     private readonly httpService: HttpService,
     private configService: ConfigService,
+    private authSessionService: AuthSessionsService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   @Public()
@@ -38,9 +46,24 @@ export class AuthController {
     return result;
   }
   @Get('/profile')
-  async profile(@UserLoggin() user: UserDocument): Promise<User> {
+  async profile(@UserLoggin() user: any): Promise<any> {
     const u = await this.usersService.findOnePublic(user?._id);
+    return {
+      ...u?.toObject(),
+      authSessionKey: user?.authSessionKey,
+    };
     return u;
+  }
+  @Post('/logout')
+  async logout(@UserLoggin() user: any): Promise<any> {
+    await this.usersService.updateOne(new Types.ObjectId(user?._id), {
+      otp: nanoid(10),
+    } as any);
+    const rs = await this.authSessionService.deleteMany({
+      ownerId: new Types.ObjectId(user?._id),
+    });
+    await this.cacheManager.del(`user_jwt_${user?._id?.toString()}`);
+    return rs;
   }
   @Public()
   @Post('/sso')
@@ -60,7 +83,6 @@ export class AuthController {
           }),
         ),
     );
-    console.log({ data });
 
     const sign = await this.authService.loginSSO({
       ssoEmail: data?.email,
@@ -75,6 +97,19 @@ export class AuthController {
   @UseGuards(AuthGuard('local'))
   @Post('login')
   async login(@Request() req) {
-    return this.authService.login(req.user);
+    const user = await this.authService.login(req.user);
+    // Lấy userAgent từ header 'User-Agent'
+    const userAgent = req.headers['user-agent'] || 'unknown';
+
+    // Lấy IP từ request
+    const ip = req.ip || req.connection.remoteAddress || 'unknown';
+    const rs = await this.authSessionService.create({
+      authSessionKey: user?.authSessionKey,
+      userAgent,
+      ip,
+      ownerId: user?.user?._id,
+      accessToken: user?.access_token,
+    });
+    return user;
   }
 }
