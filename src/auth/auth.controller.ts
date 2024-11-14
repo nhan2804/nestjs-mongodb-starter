@@ -96,7 +96,7 @@ export class AuthController {
   @Public()
   @UseGuards(AuthGuard('local'))
   @Post('login')
-  async login(@Request() req) {
+  async login(@Request() req, @Body('geoInfo') geoInfo: any) {
     const user = await this.authService.login(req.user);
     // Lấy userAgent từ header 'User-Agent'
     const userAgent = req.headers['user-agent'] || 'unknown';
@@ -109,6 +109,7 @@ export class AuthController {
       ip,
       ownerId: user?.user?._id,
       accessToken: user?.access_token,
+      geoInfo,
     });
     return user;
   }

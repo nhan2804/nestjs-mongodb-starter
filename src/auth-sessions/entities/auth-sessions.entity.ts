@@ -24,6 +24,8 @@ export class AuthSession {
   accessToken?: string;
   @Prop({ default: 'WEB' })
   type?: string;
+  @Prop({ type: Object })
+  geoInfo: object;
 
   @IsString()
   @Prop()
