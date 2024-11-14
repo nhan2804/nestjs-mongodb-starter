@@ -24,7 +24,9 @@ async function bootstrap() {
     region: configService.get('AWS_REGION'),
     s3BucketEndpoint: true,
   });
-  app.setGlobalPrefix('v1/api');
+  app.setGlobalPrefix('v1/api', {
+    exclude: ['r/:shortUrl'],
+  });
   // app.useGlobalGuards(AuthGuard(''));s
   app.enableCors({
     origin: [
@@ -38,6 +40,7 @@ async function bootstrap() {
       'https://app.example1.com',
       'http://127.0.0.1:5173',
       'http://localhost:5173',
+      'https://app.168-work.space',
     ],
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT'],
     // credentials: true,
