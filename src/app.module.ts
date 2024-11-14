@@ -25,6 +25,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { AuthSessionsModule } from './auth-sessions/auth-sessions.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ActivitysModule } from './activitys/activitys.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     CacheModule.register({
       isGlobal: true,
     }),
+    ActivitysModule,
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
