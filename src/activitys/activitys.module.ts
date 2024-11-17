@@ -12,19 +12,19 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
     MongooseModule.forFeature([
       { name: Activity.name, schema: ActivitySchema },
     ]),
-    // ClientsModule.register([
-    //   {
-    //     name: 'MATH_SERVICE',
-    //     transport: Transport.RMQ,
-    //     options: {
-    //       urls: ['amqp://localhost:5672'],
-    //       queue: 'activities_queue',
-    //       queueOptions: {
-    //         durable: false,
-    //       },
-    //     },
-    //   },
-    // ]),
+    ClientsModule.register([
+      {
+        name: 'MATH_SERVICE',
+        transport: Transport.RMQ,
+        options: {
+          urls: ['amqp://localhost:5672'],
+          queue: 'activities_queue',
+          queueOptions: {
+            durable: false,
+          },
+        },
+      },
+    ]),
   ],
 })
 export class ActivitysModule {}

@@ -4,7 +4,6 @@ import { AppModule } from './app.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
 import { config } from 'aws-sdk';
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 async function bootstrap() {
   ConfigModule.forRoot({
     envFilePath: ['.env'],
@@ -18,16 +17,6 @@ async function bootstrap() {
       forbidUnknownValues: false,
     }),
   );
-  app.connectMicroservice<MicroserviceOptions>({
-    transport: Transport.RMQ,
-    options: {
-      urls: ['amqp://localhost:5672'],
-      queue: 'activities_queue',
-      queueOptions: {
-        durable: false,
-      },
-    },
-  });
   const configService = app.get(ConfigService);
   config.update({
     accessKeyId: configService.get('AWS_ACCESS_KEY_ID'),
@@ -56,8 +45,6 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT'],
     // credentials: true,
   });
-
-  await app.startAllMicroservices();
-  await app.listen(configService.get('PORT') || 4003);
+  await app.listen(configService.get('port') || 4002);
 }
 bootstrap();
