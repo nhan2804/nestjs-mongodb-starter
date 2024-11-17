@@ -9,6 +9,7 @@ import { JwtStrategy } from './strategy/jwt.strategy';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthSessionsModule } from 'src/auth-sessions/auth-sessions.module';
+import { ActivitysModule } from 'src/activitys/activitys.module';
 @Module({
   controllers: [AuthController],
   providers: [AuthService, LocalStrategy, JwtStrategy],
@@ -26,6 +27,7 @@ import { AuthSessionsModule } from 'src/auth-sessions/auth-sessions.module';
       }),
     }),
     HttpModule,
+    ActivitysModule,
   ],
 })
 export class AuthModule {}
