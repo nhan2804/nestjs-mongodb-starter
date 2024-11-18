@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { IsOptional, IsString } from 'class-validator';
-import { Document,Types ,SchemaTypes} from 'mongoose';
+import { Document, Types, SchemaTypes } from 'mongoose';
 
 export type ProjectDocument = Project & Document;
 
@@ -22,7 +22,6 @@ export class Project {
   @IsString()
   @Prop()
   avatar?: string;
-  
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);
