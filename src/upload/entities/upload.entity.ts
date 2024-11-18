@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Mixed, Types } from 'mongoose';
-import { Project } from 'src/projects/entities/project.entity';
+import { Project } from 'src/projects/entities/projects.entity';
 import { User } from 'src/users/entities/user.entity';
 
 export type UploadDocument = Upload & Document;

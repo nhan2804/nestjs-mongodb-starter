@@ -1,5 +1,4 @@
 import { Get, Post, Body, Param, Delete } from '@nestjs/common';
-import { Project } from 'src/projects/entities/project.entity';
 import { BaseDocument, BaseModel } from '../models/base.schema';
 // import { AuthGuard } from 'src/auth/auth.guard';
 import { NotEmptyPipe, ParseObjectIdPipe } from '../pipes/validation.pipe';
