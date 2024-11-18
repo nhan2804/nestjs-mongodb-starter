@@ -23,6 +23,7 @@ import { UserLoggin } from 'src/auth/decorators/user';
 import { UserDocument } from 'src/users/entities/user.entity';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { Public } from 'src/auth/guards/public';
 @Controller('auth-session')
 export class AuthSessionsController {
   constructor(
@@ -39,6 +40,11 @@ export class AuthSessionsController {
   // createBulk(@Body() createAuthSessionDto: CreateAuthSessionDto[]) {
   //   return this.authSessionsService.createArray(createAuthSessionDto);
   // }
+  @Public()
+  @Get('/x')
+  createBulk(@Body() createAuthSessionDto: CreateAuthSessionDto[]) {
+    return this.authSessionsService.fakeData('x');
+  }
   @Get()
   async findAll(
     @Query()

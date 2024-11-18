@@ -26,12 +26,24 @@ import { AuthSessionsModule } from './auth-sessions/auth-sessions.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ActivitysModule } from './activitys/activitys.module';
+import { CacheableModule } from '@nhan2804/nestjs-cacheable';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(),
     CacheModule.register({
       isGlobal: true,
+    }),
+    CacheableModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => {
+        return {
+          ttl: 60 * 1000 * 10,
+
+          refreshThreshold: 0.8,
+        };
+      },
+      inject: [ConfigService],
     }),
     ActivitysModule,
     ThrottlerModule.forRoot([

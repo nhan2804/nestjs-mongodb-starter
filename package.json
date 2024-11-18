@@ -36,6 +36,7 @@
     "@nestjs/platform-express": "^10.4.7",
     "@nestjs/schedule": "^4.1.1",
     "@nestjs/throttler": "^6.2.1",
+    "@nhan2804/nestjs-cacheable": "1.1.4",
     "@types/amqplib": "^0.10.5",
     "@types/aws-sdk": "^2.7.0",
     "@types/bcrypt": "^5.0.0",

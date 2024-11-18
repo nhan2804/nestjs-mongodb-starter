@@ -8,6 +8,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
+import axios from 'axios';
+import { Cacheable } from '@nhan2804/nestjs-cacheable';
 @Injectable()
 export class AuthSessionsService extends AbstractService<AuthSession> {
   constructor(
@@ -72,5 +74,15 @@ export class AuthSessionsService extends AbstractService<AuthSession> {
     });
 
     return true;
+  }
+
+  @Cacheable({
+    key: (id: string[]) => `hello-${id[0]}`,
+  })
+  async fakeData(id: string) {
+    const { data } = await axios.get(
+      'https://json-placeholder.mock.beeceptor.com/posts',
+    );
+    return data;
   }
 }
