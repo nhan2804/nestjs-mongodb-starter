@@ -7,9 +7,9 @@ export class AppService {
   getVersion() {
     // throw new BadRequestException();
     return {
-      forceRefresh: false,
+      forceRefresh: true,
       version: this.configService.get('APP_VERSION'),
-      // message: 'x',
+      message: 'x',
     };
   }
 }
