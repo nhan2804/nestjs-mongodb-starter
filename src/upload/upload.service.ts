@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
-import * as AWS from 'aws-sdk';
 
 import { S3Client } from '@aws-sdk/client-s3';
 import { Model } from 'mongoose';
@@ -100,16 +99,5 @@ export class UploadService {
     return `This action updates a #${id} upload`;
   }
 
-  async remove(key: string) {
-    const s3 = new AWS.S3({
-      s3BucketEndpoint: true,
-      endpoint: 'https://sin1.contabostorage.com/bsc-qc',
-    });
-    const done = await s3.deleteObject({
-      Key: key,
-      Bucket: this.configService.get('AWS_PUBLIC_BUCKET_NAME'),
-    });
-    const delet = await this.uploadModel.findOneAndDelete({ key: key });
-    return delet;
-  }
+  async remove(key: string) {}
 }

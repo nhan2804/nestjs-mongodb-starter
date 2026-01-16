@@ -30,6 +30,8 @@ export class AuthSessionsService extends AbstractService<AuthSession> {
       authSessionKey: authSessionKey,
     });
     if (!authSession) {
+      console.log('noy r');
+
       return false;
     }
     await this.cacheManager.set(cacheKey, true, 1000 * 60 * 5);

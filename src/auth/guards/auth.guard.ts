@@ -42,6 +42,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         const decoded = this.jwtService.decode(token) as any; // Decode without verifying
         if (decoded?.authSessionKey) {
           //NNN kiểu này không ổn
+
           this.authSessionService.deleteAuthSessions({
             sessions: decoded?.authSessionKey,
             ownerId: decoded?.sub || decoded?._id,

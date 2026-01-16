@@ -3,7 +3,6 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
-import { config } from 'aws-sdk';
 async function bootstrap() {
   ConfigModule.forRoot({
     envFilePath: ['.env'],
@@ -18,12 +17,12 @@ async function bootstrap() {
     }),
   );
   const configService = app.get(ConfigService);
-  config.update({
-    accessKeyId: configService.get('AWS_ACCESS_KEY_ID'),
-    secretAccessKey: configService.get('AWS_SECRET_ACCESS_KEY'),
-    region: configService.get('AWS_REGION'),
-    s3BucketEndpoint: true,
-  });
+  // config.update({
+  //   accessKeyId: configService.get('AWS_ACCESS_KEY_ID'),
+  //   secretAccessKey: configService.get('AWS_SECRET_ACCESS_KEY'),
+  //   region: configService.get('AWS_REGION'),
+  //   s3BucketEndpoint: true,
+  // });
   app.setGlobalPrefix('v1/api', {
     exclude: ['r/:shortUrl'],
   });
