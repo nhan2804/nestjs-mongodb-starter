@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
+import { urlencoded, json } from 'express';
 async function bootstrap() {
   ConfigModule.forRoot({
     envFilePath: ['.env'],
@@ -26,24 +27,17 @@ async function bootstrap() {
   app.setGlobalPrefix('v1/api', {
     exclude: ['r/:shortUrl'],
   });
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ extended: true, limit: '50mb' }));
   // app.useGlobalGuards(AuthGuard(''));s
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://example.com',
-      'http://www.example.com',
-      'http://app.example.com',
-      'https://example.com',
-      'https://www.example.com',
-      'https://app.example1.com',
-      'http://127.0.0.1:5173',
-      'http://localhost:5173',
-      'https://app.168-work.space',
-    ],
-    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT'],
-    // credentials: true,
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
-  await app.listen(configService.get('port') || 4002);
+  const port = configService.get('PORT') || configService.get('port') || 4002;
+  await app.listen(port, '0.0.0.0');
+  console.log(`Backend server running on http://0.0.0.0:${port}/v1/api`);
 }
 bootstrap();

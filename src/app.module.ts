@@ -27,6 +27,10 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ActivitysModule } from './activitys/activitys.module';
 import { CacheableModule } from '@nhan2804/nestjs-cacheable';
+import { CitizensModule } from './citizens/citizens.module';
+import { ExamSessionsModule } from './exam-sessions/exam-sessions.module';
+import { ExamRecordsModule } from './exam-records/exam-records.module';
+import { AuditLogsModule } from './audit-logs/audit-logs.module';
 
 @Module({
   imports: [
@@ -53,7 +57,10 @@ import { CacheableModule } from '@nhan2804/nestjs-cacheable';
       },
     ]),
     ProjectsModule,
-    //s
+    CitizensModule,
+    ExamSessionsModule,
+    ExamRecordsModule,
+    AuditLogsModule,
 
     MongooseModule.forRootAsync({
       imports: [ConfigModule],

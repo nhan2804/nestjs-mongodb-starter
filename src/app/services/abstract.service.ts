@@ -86,7 +86,7 @@ export class AbstractService<T, S = T & Document> {
   }
   async findOneById(id: ID) {
     const result = await this.model.findOne({ _id: id });
-    result;
+    return result;
   }
 
   async update(filter: T, values: T | T[]) {
