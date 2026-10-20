@@ -16,6 +16,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ExamRecordsService } from './exam-records.service';
 import { UserLoggin } from 'src/auth/decorators/user';
 import { Public } from 'src/auth/guards/public';
+import { UpdateHealthExamDto } from './dto/update-health-exam.dto';
 
 @Controller('exam-records')
 export class ExamRecordsController {
@@ -33,6 +34,25 @@ export class ExamRecordsController {
       scheduledDate,
       village,
     );
+  }
+
+  @Get('export-health-exam')
+  async exportHealthExam(
+    @Query() query: any,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.examRecordsService.exportHealthExamExcel(query);
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const fileName = `Bao_cao_kham_so_tuyen_NVQS_${dateStr}.xlsx`;
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${fileName}"`,
+    );
+    res.send(buffer);
   }
 
   @Get('photos/deleted')
@@ -103,6 +123,15 @@ export class ExamRecordsController {
     @UserLoggin() user: any,
   ) {
     return this.examRecordsService.updateNote(id, note, user);
+  }
+
+  @Patch(':id/health-exam')
+  updateHealthExam(
+    @Param('id') id: string,
+    @Body() dto: UpdateHealthExamDto,
+    @UserLoggin() user: any,
+  ) {
+    return this.examRecordsService.updateHealthExam(id, dto, user);
   }
 
   @UseInterceptors(FileInterceptor('file'))

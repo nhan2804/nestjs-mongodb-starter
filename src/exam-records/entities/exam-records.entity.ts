@@ -49,6 +49,50 @@ export class ExamPhoto {
 }
 export const ExamPhotoSchema = SchemaFactory.createForClass(ExamPhoto);
 
+@Schema({ _id: false })
+export class PhysicalMetrics {
+  @Prop({ type: Number, default: null })
+  height?: number | null; // Cao (cm)
+
+  @Prop({ type: Number, default: null })
+  weight?: number | null; // Cân nặng (kg)
+
+  @Prop({ type: Number, default: null })
+  chest?: number | null; // Vòng ngực trung bình (cm)
+}
+export const PhysicalMetricsSchema = SchemaFactory.createForClass(PhysicalMetrics);
+
+@Schema({ _id: false })
+export class HealthExam {
+  @Prop({ type: PhysicalMetricsSchema, default: () => ({}) })
+  physical?: PhysicalMetrics;
+
+  @Prop({ type: String, default: '' })
+  healthStatus?: string; // Tình trạng sức khỏe và bệnh tật
+
+  @Prop({ type: Boolean, default: null })
+  isQualified?: boolean | null; // Đủ điều kiện sức khỏe khám NVQS
+
+  @Prop({ type: Boolean, default: null })
+  isDisqualified?: boolean | null; // Không đủ điều kiện sức khỏe khám NVQS
+
+  @Prop({ type: String, default: '' })
+  exemptCategory?: string; // Thuộc diện miễn làm NVQS
+
+  @Prop({ type: String, default: '' })
+  otherReason?: string; // Lý do khác (ghi cụ thể)
+
+  @Prop({ type: String, default: '' })
+  healthNote?: string; // Ghi chú sức khỏe
+
+  @Prop({ type: Date, default: null })
+  updatedAt?: Date | null;
+
+  @Prop({ type: String, default: null })
+  updatedBy?: string | null;
+}
+export const HealthExamSchema = SchemaFactory.createForClass(HealthExam);
+
 @Schema({
   collection: 'exam_records',
   timestamps: true,
@@ -77,6 +121,9 @@ export class ExamRecord {
   @Prop({ type: [ExamPhotoSchema], default: [] })
   photos: ExamPhoto[];
 
+  @Prop({ type: HealthExamSchema, default: null })
+  healthExam?: HealthExam;
+
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -86,6 +133,7 @@ export const ExamRecordSchema = SchemaFactory.createForClass(ExamRecord);
 ExamRecordSchema.index({ citizenId: 1, sessionId: 1 }, { unique: true });
 ExamRecordSchema.index({ sessionId: 1, scheduledDate: 1, village: 1 });
 ExamRecordSchema.index({ sessionId: 1, 'attendance.arrived': 1 });
+ExamRecordSchema.index({ sessionId: 1, 'healthExam.isQualified': 1 });
 ExamRecordSchema.index({ createdAt: -1 });
 
 ExamRecordSchema.virtual('citizen', {

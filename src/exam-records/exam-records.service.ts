@@ -11,6 +11,7 @@ import {
   ExamRecordDocument,
   ExamPhoto,
 } from './entities/exam-records.entity';
+import { UpdateHealthExamDto } from './dto/update-health-exam.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
@@ -163,6 +164,79 @@ export class ExamRecordsService extends AbstractService<ExamRecord> {
       after: { note: record.note },
       metadata: {
         citizenId: record.citizenId,
+      },
+    });
+
+    return record;
+  }
+
+  // --- HEALTH EXAMINATION WORKFLOW ---
+
+  async updateHealthExam(
+    id: string,
+    dto: UpdateHealthExamDto,
+    user?: any,
+  ): Promise<ExamRecordDocument> {
+    const record = await this.model.findById(id).populate('citizen');
+    if (!record) {
+      throw new NotFoundException('Không tìm thấy hồ sơ khám');
+    }
+
+    const beforeHealth = record.healthExam
+      ? JSON.parse(JSON.stringify(record.healthExam))
+      : null;
+
+    const operatorName = user?.fullName || user?.username || 'Cán bộ y tế';
+    const operatorId = user?._id?.toString() || user?.sub || 'system';
+
+    const parseNum = (val: any) => {
+      if (val === null || val === undefined || val === '') return null;
+      const n = Number(val);
+      return isNaN(n) ? null : n;
+    };
+
+    const physical = {
+      height: parseNum(dto.physical?.height),
+      weight: parseNum(dto.physical?.weight),
+      chest: parseNum(dto.physical?.chest),
+    };
+
+    record.healthExam = {
+      physical,
+      healthStatus: (dto.healthStatus || '').trim(),
+      isQualified:
+        dto.isQualified === true
+          ? true
+          : dto.isQualified === false
+          ? false
+          : null,
+      isDisqualified:
+        dto.isDisqualified === true
+          ? true
+          : dto.isDisqualified === false
+          ? false
+          : null,
+      exemptCategory: (dto.exemptCategory || '').trim(),
+      otherReason: (dto.otherReason || '').trim(),
+      healthNote: (dto.healthNote || '').trim(),
+      updatedAt: new Date(),
+      updatedBy: operatorName,
+    };
+
+    await record.save();
+
+    await this.auditLogsService.logAction({
+      action: AuditAction.HEALTH_EXAM_UPDATE,
+      entityType: 'exam_record',
+      entityId: id,
+      actorId: operatorId,
+      actorName: operatorName,
+      before: beforeHealth,
+      after: record.healthExam,
+      metadata: {
+        citizenId: record.citizenId,
+        village: record.village,
+        scheduledDate: record.scheduledDate,
       },
     });
 
@@ -601,12 +675,16 @@ export class ExamRecordsService extends AbstractService<ExamRecord> {
     const records = await this.model.find(matchFilter, {
       attendance: 1,
       photos: 1,
+      healthExam: 1,
     });
 
     let totalCitizens = records.length;
     let arrivedCount = 0;
     let photographedCount = 0;
     let totalPhotos = 0;
+    let qualifiedCount = 0;
+    let disqualifiedCount = 0;
+    let examinedHealthCount = 0;
 
     for (const r of records) {
       if (r.attendance?.arrived) {
@@ -617,6 +695,13 @@ export class ExamRecordsService extends AbstractService<ExamRecord> {
         photographedCount++;
         totalPhotos += activePhotos.length;
       }
+      if (r.healthExam?.isQualified === true) {
+        qualifiedCount++;
+        examinedHealthCount++;
+      } else if (r.healthExam?.isDisqualified === true) {
+        disqualifiedCount++;
+        examinedHealthCount++;
+      }
     }
 
     return {
@@ -626,9 +711,220 @@ export class ExamRecordsService extends AbstractService<ExamRecord> {
       photographedCount,
       notPhotographedCount: totalCitizens - photographedCount,
       totalPhotos,
+      qualifiedCount,
+      disqualifiedCount,
+      examinedHealthCount,
+      notExaminedHealthCount: totalCitizens - examinedHealthCount,
       distinctDates,
       distinctVillages,
     };
+  }
+
+  // --- EXPORT HEALTH EXAM EXCEL ---
+
+  async exportHealthExamExcel(query: any): Promise<Buffer> {
+    const { sessionId, scheduledDate, village, status, search } = query;
+
+    const filter: any = {};
+    if (sessionId && Types.ObjectId.isValid(sessionId)) {
+      filter.sessionId = new Types.ObjectId(sessionId);
+    }
+
+    if (scheduledDate && scheduledDate !== 'all') {
+      filter.scheduledDate = scheduledDate;
+    }
+
+    if (village && village !== 'all') {
+      filter.village = village;
+    }
+
+    // Status filter
+    if (status === 'arrived') {
+      filter['attendance.arrived'] = true;
+    } else if (status === 'not_arrived') {
+      filter['attendance.arrived'] = false;
+    } else if (status === 'qualified') {
+      filter['healthExam.isQualified'] = true;
+    } else if (status === 'disqualified') {
+      filter['healthExam.isDisqualified'] = true;
+    } else if (status === 'examined_health') {
+      filter.$or = [
+        { 'healthExam.isQualified': true },
+        { 'healthExam.isDisqualified': true },
+      ];
+    } else if (status === 'not_examined_health') {
+      filter['healthExam.isQualified'] = { $ne: true };
+      filter['healthExam.isDisqualified'] = { $ne: true };
+    }
+
+    // Search query on Citizen
+    if (search && search.trim()) {
+      const q = search.trim();
+      const nameRegex = buildVietnameseRegex(q);
+      const citizenSearch: any = {
+        $or: [
+          { fullName: { $regex: nameRegex } },
+          { _id: { $regex: q, $options: 'i' } },
+        ],
+      };
+      if (!isNaN(Number(q))) {
+        citizenSearch.$or.push({ index: Number(q) }, { idx: Number(q) });
+      }
+
+      const matchingCitizens = await this.citizenModel.find(citizenSearch, {
+        _id: 1,
+      });
+      const matchingCCCDs = matchingCitizens.map((c) => c._id);
+      filter.citizenId = { $in: matchingCCCDs };
+    }
+
+    const records = await this.model.find(filter).populate('citizen');
+
+    // Sắp xếp danh sách: theo Ngày khám, Thôn, STT công dân, Họ tên
+    records.sort((a: any, b: any) => {
+      if (a.scheduledDate !== b.scheduledDate) {
+        return (a.scheduledDate || '').localeCompare(b.scheduledDate || '');
+      }
+      const vA = a.village || a.citizen?.village || '';
+      const vB = b.village || b.citizen?.village || '';
+      const vComp = vA.localeCompare(vB, 'vi');
+      if (vComp !== 0) return vComp;
+
+      const idxA = a.citizen?.index ?? a.citizen?.idx ?? 999999;
+      const idxB = b.citizen?.index ?? b.citizen?.idx ?? 999999;
+      if (idxA !== idxB) return idxA - idxB;
+
+      return (a.citizen?.fullName || '').localeCompare(
+        b.citizen?.fullName || '',
+        'vi',
+      );
+    });
+
+    const templatePath = path.resolve(
+      process.cwd(),
+      'excelTemplate',
+      'heathExamTemplate.xlsx',
+    );
+    if (!fs.existsSync(templatePath)) {
+      throw new NotFoundException(
+        'Không tìm thấy tệp biểu mẫu heathExamTemplate.xlsx',
+      );
+    }
+
+    const ExcelJS = require('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(templatePath);
+    const worksheet = workbook.worksheets[0] || workbook.getWorksheet('Sheet1');
+
+    // Xóa các dòng mẫu trắng ban đầu từ dòng 7 trở đi
+    const initialRowCount = Math.max(worksheet.rowCount, 25);
+    for (let r = 7; r <= initialRowCount; r++) {
+      const row = worksheet.getRow(r);
+      for (let c = 1; c <= 12; c++) {
+        row.getCell(c).value = null;
+        row.getCell(c).border = null;
+      }
+    }
+
+    const borderStyle = {
+      top: { style: 'thin' },
+      left: { style: 'thin' },
+      bottom: { style: 'thin' },
+      right: { style: 'thin' },
+    };
+    const fontStyle = { name: 'Times New Roman', size: 11 };
+
+    records.forEach((record: any, index: number) => {
+      const r = 7 + index;
+      const row = worksheet.getRow(r);
+      row.height = 24;
+
+      const citizen = record.citizen || {};
+      const health = record.healthExam || {};
+      const phys = health.physical || {};
+
+      const stt = citizen.idx || citizen.index || index + 1;
+      const fullName = citizen.fullName || '';
+      const birthDate = citizen.birthDate ? String(citizen.birthDate) : '';
+      const address =
+        citizen.address || (record.village ? `Thôn ${record.village}` : '');
+      const cccd = citizen._id ? String(citizen._id) : '';
+
+      const height =
+        phys.height !== null && phys.height !== undefined ? phys.height : '';
+      const weight =
+        phys.weight !== null && phys.weight !== undefined ? phys.weight : '';
+      const chest =
+        phys.chest !== null && phys.chest !== undefined ? phys.chest : '';
+      const healthStatus = health.healthStatus || '';
+
+      const isQualified = health.isQualified === true ? 'X' : '';
+      const exemptCategory =
+        health.isDisqualified === true ? health.exemptCategory || '' : '';
+      const otherReason =
+        health.isDisqualified === true
+          ? health.otherReason || health.healthNote || ''
+          : health.healthNote || '';
+
+      const values = [
+        stt,
+        fullName,
+        birthDate,
+        address,
+        cccd,
+        height,
+        weight,
+        chest,
+        healthStatus,
+        isQualified,
+        exemptCategory,
+        otherReason,
+      ];
+
+      for (let c = 1; c <= 12; c++) {
+        const cell = row.getCell(c);
+        cell.value = values[c - 1];
+        cell.border = borderStyle;
+        cell.font = fontStyle;
+
+        if ([2, 4, 9, 11, 12].includes(c)) {
+          cell.alignment = {
+            vertical: 'middle',
+            horizontal: 'left',
+            wrapText: true,
+          };
+        } else {
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        }
+
+        if (c === 3 || c === 5) {
+          cell.numFmt = '@';
+        }
+      }
+    });
+
+    // Phần ghi chú ở chân bảng
+    const noteStart = 7 + records.length + 1;
+    const n1 = worksheet.getRow(noteStart);
+    n1.getCell(1).value = '* Ghi chú:';
+    n1.getCell(1).font = {
+      name: 'Times New Roman',
+      size: 11,
+      bold: true,
+      italic: true,
+    };
+
+    const n2 = worksheet.getRow(noteStart + 1);
+    n2.getCell(1).value =
+      '- Thống kê sơ tuyển sức khỏe NVQS sau mỗi ngày cộng dồn các cột phân loại sức khỏe';
+    n2.getCell(1).font = { name: 'Times New Roman', size: 11, italic: true };
+
+    const n3 = worksheet.getRow(noteStart + 2);
+    n3.getCell(1).value = '- Sau mỗi đợt có tổng kết việc phân loại sức khỏe';
+    n3.getCell(1).font = { name: 'Times New Roman', size: 11, italic: true };
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
   }
 
   // --- LIST WITH SEARCH & FILTERS ---
@@ -670,6 +966,18 @@ export class ExamRecordsService extends AbstractService<ExamRecord> {
         { photos: { $size: 0 } },
         { photos: { $not: { $elemMatch: { deletedAt: null } } } },
       ];
+    } else if (status === 'qualified') {
+      filter['healthExam.isQualified'] = true;
+    } else if (status === 'disqualified') {
+      filter['healthExam.isDisqualified'] = true;
+    } else if (status === 'examined_health') {
+      filter.$or = [
+        { 'healthExam.isQualified': true },
+        { 'healthExam.isDisqualified': true },
+      ];
+    } else if (status === 'not_examined_health') {
+      filter['healthExam.isQualified'] = { $ne: true };
+      filter['healthExam.isDisqualified'] = { $ne: true };
     }
 
     // Search query on Citizen

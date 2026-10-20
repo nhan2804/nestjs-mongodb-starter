@@ -13,6 +13,7 @@ export enum AuditAction {
   PHOTO_DELETE = 'photo.delete',
   PHOTO_RESTORE = 'photo.restore',
   PHOTO_SET_PRIMARY = 'photo.set_primary',
+  HEALTH_EXAM_UPDATE = 'health_exam.update',
 }
 
 @Schema({
